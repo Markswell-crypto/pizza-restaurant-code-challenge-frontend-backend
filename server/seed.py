@@ -1,5 +1,5 @@
-from server.app import app
-from server.models import db, Restaurant, Pizza, RestaurantPizza
+from app import app
+from models import db, Restaurant, Pizza, RestaurantPizza
 from faker import Faker
 import random
 

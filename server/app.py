@@ -208,8 +208,8 @@ class RestaurantPizzasResource(Resource):
         return pizza_schema.dump(pizza), 201
 
 # RESTful routes
-api.add_resource(RestaurantsResource, '/api/restaurants')
-api.add_resource(RestaurantByIDResource, '/api/restaurants/<int:id>')
-api.add_resource(PizzasResource, '/api/pizzas')
-api.add_resource(PizzaByIDResource, '/api/pizzas/<int:id>')
-api.add_resource(RestaurantPizzasResource, '/api/restaurant_pizzas')
+api.add_resource(RestaurantsResource, '/restaurants')
+api.add_resource(RestaurantByIDResource, '/restaurants/<int:id>')
+api.add_resource(PizzasResource, '/pizzas')
+api.add_resource(PizzaByIDResource, '/pizzas/<int:id>')
+api.add_resource(RestaurantPizzasResource, '/restaurant_pizzas')

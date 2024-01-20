@@ -2,7 +2,7 @@
 
 ## Phase 4 Week 1 : Flask Code Challenge
 
-![license](https://img.shields.io/badge/license-%20MIT%20-green.svg)](./LICENSE)
+[![license](https://img.shields.io/badge/license-%20MIT%20-green.svg)](./LICENSE)
 ![python version](https://img.shields.io/badge/python-3.10.12-blue.svg)
 ![Flask version](https://img.shields.io/badge/flask-2.3.3-red.svg)
 ![Gunicorn version](https://img.shields.io/badge/gunicorn-21.2.0-orange.svg)
@@ -39,6 +39,7 @@ cd pizza-restaurant-code-challenge-frontend-backend
 
 ```python
 pipenv install
+npm install --prefix client
 ```
 
 - If `pipenv` is not already installed, you can do so using `pip`:
@@ -64,6 +65,8 @@ python3 seed.py
 ```python
 python3 run.py
 ```
+
+![domain diagram](domain.png)
 
 ### 7. Use an API management tool e.g., `Postman` / `Thunder Client` to make requests
 

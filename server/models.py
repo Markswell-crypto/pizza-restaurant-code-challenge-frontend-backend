@@ -4,7 +4,7 @@ from sqlalchemy_serializer import SerializerMixin
 
 db = SQLAlchemy()
 
-class Restaurant(db.Model):
+class Restaurant(db.Model, SerializerMixin):
     __tablename__ = 'restaurants'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -13,8 +13,10 @@ class Restaurant(db.Model):
 
     restaurant_pizzas = db.relationship('RestaurantPizza', backref='restaurant')
 
+    def to_dict(self):
+        return self.to_dict_exclude('restaurant_pizzas')  # exclude relationship
 
-class Pizza(db.Model):
+class Pizza(db.Model, SerializerMixin):
     __tablename__ = 'pizzas'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -25,8 +27,7 @@ class Pizza(db.Model):
 
     restaurant_pizzas = db.relationship('RestaurantPizza', backref='pizza')
 
-
-class RestaurantPizza(db.Model):
+class RestaurantPizza(db.Model, SerializerMixin):
     __tablename__ = 'restaurant_pizzas'
 
     id = db.Column(db.Integer, primary_key=True)

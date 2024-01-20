@@ -3,7 +3,7 @@
 from flask import Flask, request, make_response
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
-from flask_restx import Api, Resource, Namespace, fields
+from flask_restful import Api, Resource, reqparse, fields, abort
 
 from models import db, Restaurant, Pizza, RestaurantPizza
 
@@ -17,16 +17,12 @@ migrate = Migrate(app, db)
 db.init_app(app)
 ma = Marshmallow(app)
 
-api = Api()
-api.init_app(app)
-
-ns = Namespace("api")
-api.add_namespace(ns)
+api = Api(app)
 
 class RestaurantSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Restaurant
-        ordered=True
+        ordered = True
 
     id = ma.auto_field()
     name = ma.auto_field()
@@ -35,13 +31,11 @@ class RestaurantSchema(ma.SQLAlchemySchema):
 restaurant_schema = RestaurantSchema()
 restaurants_schema = RestaurantSchema(many=True)
 
-
 class PizzasSchema(ma.SQLAlchemySchema):
-
     class Meta:
         model = Pizza
-        ordered=True
-    
+        ordered = True
+
     id = ma.auto_field()
     name = ma.auto_field()
     ingredients = ma.auto_field()
@@ -50,293 +44,172 @@ pizza_schema = PizzasSchema()
 pizzas_schema = PizzasSchema(many=True)
 
 class RestaurantPizzaSchema(ma.SQLAlchemySchema):
-
     class Meta:
         model = RestaurantPizza
-        ordered=True
-    
+        ordered = True
+
     id = ma.auto_field()
     price = ma.auto_field()
 
 restaurant_pizza_schema = RestaurantPizzaSchema()
 
+# Restful input parser
+restaurant_parser = reqparse.RequestParser()
+restaurant_parser.add_argument('name', type=str, help='Restaurant name', required=True)
+restaurant_parser.add_argument('address', type=str, help='Restaurant address', required=True)
 
-# restx swagger input
-restaurant_model = api.model(
-    "Restaurant Input", {
-        "name": fields.String,
-        "address": fields.String,
-    }
-)
+pizza_parser = reqparse.RequestParser()
+pizza_parser.add_argument('name', type=str, help='Pizza name', required=True)
+pizza_parser.add_argument('ingredients', type=str, help='Pizza ingredients', required=True)
 
-restaurant_pizza_model = api.model(
-    "RestaurantPizza Input", {
-        "price": fields.Integer,
-        "restaurant_id": fields.Integer,
-        "pizza_id": fields.Integer,
-    }
-)
+restaurant_pizza_parser = reqparse.RequestParser()
+restaurant_pizza_parser.add_argument('price', type=int, help='Pizza price', required=True)
+restaurant_pizza_parser.add_argument('restaurant_id', type=int, help='Restaurant ID', required=True)
+restaurant_pizza_parser.add_argument('pizza_id', type=int, help='Pizza ID', required=True)
 
-pizza_model = api.model(
-    "Pizza Input", {
-        "name": fields.String,
-        "ingredients": fields.String,
-    }
-)
-
-@ns.route("/restaurants")
-class Restaurants(Resource):
-
+# RESTful Resources
+class RestaurantsResource(Resource):
     def get(self):
         restaurants = Restaurant.query.all()
 
         if not restaurants:
-            response_body = {
-                "message": "This record does not exist in our database. Please try again."
-            }
-
-            response = make_response(
-                response_body,
-                404
-            )
-            return response
-        else:
-
-            response = make_response(
-                restaurants_schema.dump(restaurants),
-                200
-            )
-            return response
+            abort(404, message="This record does not exist in our database. Please try again.")
         
-    
-    @ns.expect(restaurant_model)
+        return restaurants_schema.dump(restaurants), 200
+
     def post(self):
-        new_restaurant= Restaurant(
-            name=ns.payload['name'],
-            address=ns.payload['address']
-        )
+        args = restaurant_parser.parse_args()
+        new_restaurant = Restaurant(name=args['name'], address=args['address'])
 
         db.session.add(new_restaurant)
         db.session.commit()
 
-        return make_response(
-            restaurant_schema.dump(new_restaurant),
-            201
-        )
+        return restaurant_schema.dump(new_restaurant), 201
 
-@ns.route("/restaurants/<int:id>")
-class RestaurantByID(Resource):
-
+class RestaurantByIDResource(Resource):
     def get(self, id):
-
-        restaurant = Restaurant.query.filter(Restaurant.id == id).first()
-
-        if not restaurant:
-            response_body = {
-                "error": "Restaurant not found"
-            }
-
-            response = make_response(
-                response_body,
-                404
-            )
-
-            return response
-        
-        else:
-
-            pizzas = Pizza.query.join(RestaurantPizza).filter(RestaurantPizza.restaurant_id == id).all()
-
-            response_body = {
-                "id": restaurant.id,
-                "name": restaurant.name,
-                "address": restaurant.address,
-                "pizzas": []
-            }
-
-            for pizza in pizzas:
-                pizza_data = {
-                    "id": pizza.id,
-                    "name": pizza.name,
-                    "ingredients": pizza.ingredients
-                }
-                response_body["pizzas"].append(pizza_data)
-
-            response = make_response(
-                response_body,
-                200
-            )
-            return response
-        
-    def delete(self, id):
-        restaurant = Restaurant.query.filter(Restaurant.id == id).first()
-        
-        if not restaurant:
-            response_body = {
-                "error": "Restaurant not found."
-            }
-
-            response = make_response(
-                response_body,
-                404
-            )
-
-            return response
-        
-        else:
-        
-            db.session.delete(restaurant)
-            db.session.commit()
-
-            response_body ={}
-
-            response = make_response(
-                response_body,
-                204
-            )
-
-            return response
-        
-    @ns.expect(restaurant_model)
-    def patch(self, id):
-
         restaurant = Restaurant.query.get(id)
 
-        if restaurant:
-            restaurant.name = ns.payload['name']
-            restaurant.address = ns.payload['address']
-        
-            db.session.commit()
-            
-            return restaurant_schema.dump(restaurant), 200
-        else:
-            return { "error": "Restaurant not found."}, 404
-        
-    
+        if not restaurant:
+            abort(404, message="Restaurant not found")
 
-@ns.route("/pizzas")
-class Pizzas(Resource):
+        pizzas = Pizza.query.join(RestaurantPizza).filter(RestaurantPizza.restaurant_id == id).all()
 
+        response_body = {
+            "id": restaurant.id,
+            "name": restaurant.name,
+            "address": restaurant.address,
+            "pizzas": [{"id": pizza.id, "name": pizza.name, "ingredients": pizza.ingredients} for pizza in pizzas]
+        }
+
+        return response_body, 200
+
+    def delete(self, id):
+        restaurant = Restaurant.query.get(id)
+
+        if not restaurant:
+            abort(404, message="Restaurant not found.")
+
+        db.session.delete(restaurant)
+        db.session.commit()
+
+        return {}, 204
+
+    def patch(self, id):
+        restaurant = Restaurant.query.get(id)
+
+        if not restaurant:
+            abort(404, message="Restaurant not found.")
+
+        args = restaurant_parser.parse_args()
+        restaurant.name = args['name']
+        restaurant.address = args['address']
+
+        db.session.commit()
+
+        return restaurant_schema.dump(restaurant), 200
+
+class PizzasResource(Resource):
     def get(self):
         pizzas = Pizza.query.all()
 
         if not pizzas:
-            response_body = {
-                "error": "Pizza not found."
-            }
+            abort(404, message="Pizza not found.")
 
-            response = make_response(
-                response_body,
-                404
-            )
-            return response
-        else:
+        return pizzas_schema.dump(pizzas), 200
 
-            response = make_response(
-                pizzas_schema.dump(pizzas),
-                200
-            )
-            return response
-        
-    @ns.expect(pizza_model)
     def post(self):
-        new_flavor= Pizza(
-            name=ns.payload['name'],
-            ingredients=ns.payload['ingredients']
-        )
+        args = pizza_parser.parse_args()
+        new_pizza = Pizza(name=args['name'], ingredients=args['ingredients'])
 
-        db.session.add(new_flavor)
+        db.session.add(new_pizza)
         db.session.commit()
-        
-        return make_response(
-            pizza_schema.dump(new_flavor),
-            201
-        )
 
+        return pizza_schema.dump(new_pizza), 201
 
-@ns.route("/pizzas/<int:id>")
-class PizzaByID(Resource):
-
+class PizzaByIDResource(Resource):
     def get(self, id):
         pizza_exists = Pizza.query.get(id)
 
-        if pizza_exists:
-            return pizza_schema.dump(pizza_exists), 200
-        else:
-            return { "error": "Pizza not found."}, 404
+        if not pizza_exists:
+            abort(404, message="Pizza not found.")
 
-    @ns.expect(pizza_model)
+        return pizza_schema.dump(pizza_exists), 200
+
     def patch(self, id):
-
         pizza = Pizza.query.get(id)
 
-        if pizza:
-            pizza.name = ns.payload['name']
-            pizza.ingredients = ns.payload['ingredients']
-        
-            db.session.commit()
-            
-            return pizza_schema.dump(pizza), 200
-        else:
-            return { "error": "Pizza not found."}, 404
-        
+        if not pizza:
+            abort(404, message="Pizza not found.")
+
+        args = pizza_parser.parse_args()
+        pizza.name = args['name']
+        pizza.ingredients = args['ingredients']
+
+        db.session.commit()
+
+        return pizza_schema.dump(pizza), 200
+
     def delete(self, id):
         pizza = Pizza.query.get(id)
 
-        if pizza:
-            db.session.delete(pizza)
-            db.session.commit()
-            return {"message": "Pizza deleted successfully."}, 204
-        else:
-            return { "error": "Pizza not found."}, 404
-        
-        
+        if not pizza:
+            abort(404, message="Pizza not found.")
 
-@ns.route("/restaurant_pizzas")
-class RestaurantPizzas(Resource):
+        db.session.delete(pizza)
+        db.session.commit()
 
-    @ns.expect(restaurant_pizza_model)
+        return {"message": "Pizza deleted successfully."}, 204
+
+class RestaurantPizzasResource(Resource):
     def post(self):
+        args = restaurant_pizza_parser.parse_args()
         restaurant_pizza = RestaurantPizza(
-            price=ns.payload["price"],
-            restaurant_id=ns.payload["restaurant_id"],
-            pizza_id=ns.payload["pizza_id"]
+            price=args["price"],
+            restaurant_id=args["restaurant_id"],
+            pizza_id=args["pizza_id"]
         )
-        # price = ns.payload["price"]
-        restaurant = Restaurant.query.filter(Restaurant.id == int(ns.payload["restaurant_id"])).first()
-        pizza = Pizza.query.filter(Pizza.id == int(ns.payload["pizza_id"])).first()
 
+        restaurant = Restaurant.query.get(args["restaurant_id"])
+        pizza = Pizza.query.get(args["pizza_id"])
 
         if not pizza and not restaurant:
-            return make_response(
-                {"error": "Restaurant and Pizza not found."},
-                404
-            )
+            abort(404, message="Restaurant and Pizza not found.")
         elif not restaurant:
-            return make_response(
-                {"error": "Restaurant not found."},
-                404
-            )
+            abort(404, message="Restaurant not found.")
         elif not pizza:
-            return make_response(
-                {"error": "Pizza not found."},
-                404
-            )
-        elif 1 < ns.payload["price"] > 30:
-            return make_response(
-                {
-                    "error": "Validation Error",
-                    "message": "Price must be between 1 and 30"
-                },
-                422
-            )
-        else:
-            db.session.add(restaurant_pizza)
-            db.session.commit()        
-            
-            response=make_response(
-                pizza_schema.dump(pizza),
-                201
-            )
+            abort(404, message="Pizza not found.")
+        elif not (1 <= args["price"] <= 30):
+            abort(422, message="Validation Error", errors={"message": "Price must be between 1 and 30"})
 
-            return response
+        db.session.add(restaurant_pizza)
+        db.session.commit()
+
+        return pizza_schema.dump(pizza), 201
+
+# RESTful routes
+api.add_resource(RestaurantsResource, '/api/restaurants')
+api.add_resource(RestaurantByIDResource, '/api/restaurants/<int:id>')
+api.add_resource(PizzasResource, '/api/pizzas')
+api.add_resource(PizzaByIDResource, '/api/pizzas/<int:id>')
+api.add_resource(RestaurantPizzasResource, '/api/restaurant_pizzas')

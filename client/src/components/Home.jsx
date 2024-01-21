@@ -1,18 +1,19 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+// Home.jsx
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 function Home() {
   const [restaurants, setRestaurants] = useState([]);
 
   useEffect(() => {
-    fetch("/restaurants")
+    fetch('/restaurants')
       .then((r) => r.json())
       .then(setRestaurants);
   }, []);
 
   function handleDelete(id) {
     fetch(`/restaurants/${id}`, {
-      method: "DELETE",
+      method: 'DELETE',
     }).then((r) => {
       if (r.ok) {
         setRestaurants((restaurants) =>

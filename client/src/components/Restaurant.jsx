@@ -1,27 +1,32 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import PizzaForm from "./PizzaForm";
+// Restaurant.jsx
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import PizzaForm from './PizzaForm';
+import Pizza from './Pizza'; 
 
-function Home() {
+function Restaurant() {
   const [{ data: restaurant, error, status }, setRestaurant] = useState({
-    data: null,
+    data: { pizzas: [] }, // Initialize pizzas array
     error: null,
-    status: "pending",
+    status: 'pending',
   });
   const { id } = useParams();
 
   useEffect(() => {
-    fetch(`/restaurants/${id}`).then((r) => {
-      if (r.ok) {
-        r.json().then((restaurant) =>
-          setRestaurant({ data: restaurant, error: null, status: "resolved" })
-        );
-      } else {
-        r.json().then((err) =>
-          setRestaurant({ data: null, error: err.error, status: "rejected" })
-        );
-      }
-    });
+    fetch(`/restaurants/${id}`)
+      .then((r) => {
+        if (r.ok) {
+          return r.json();
+        } else {
+          throw new Error('Restaurant not found');
+        }
+      })
+      .then((restaurant) =>
+        setRestaurant({ data: restaurant, error: null, status: 'resolved' })
+      )
+      .catch((err) =>
+        setRestaurant({ data: null, error: err.message, status: 'rejected' })
+      );
   }, [id]);
 
   function handleAddPizza(newPizza) {
@@ -31,12 +36,12 @@ function Home() {
         pizzas: [...restaurant.pizzas, newPizza],
       },
       error: null,
-      status: "resolved",
+      status: 'resolved',
     });
   }
 
-  if (status === "pending") return <h1>Loading...</h1>;
-  if (status === "rejected") return <h1>Error: {error.error}</h1>;
+  if (status === 'pending') return <h1>Loading...</h1>;
+  if (status === 'rejected') return <h1>Error: {error}</h1>;
 
   return (
     <section className="container">
@@ -47,12 +52,7 @@ function Home() {
       <div className="card">
         <h2>Pizza Menu</h2>
         {restaurant.pizzas.map((pizza) => (
-          <div key={pizza.id}>
-            <h3>{pizza.name}</h3>
-            <p>
-              <em>{pizza.ingredients}</em>
-            </p>
-          </div>
+          <Pizza key={pizza.id} pizza={pizza} />
         ))}
       </div>
       <div className="card">
@@ -63,4 +63,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default Restaurant;

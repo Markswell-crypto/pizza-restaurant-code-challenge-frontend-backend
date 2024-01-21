@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
 function PizzaForm({ restaurantId, onAddPizza }) {
   const [pizzas, setPizzas] = useState([]);
-  const [pizzaId, setPizzaId] = useState("");
-  const [price, setPrice] = useState("");
+  const [pizzaId, setPizzaId] = useState('');
+  const [price, setPrice] = useState('');
   const [formErrors, setFormErrors] = useState([]);
 
   useEffect(() => {
-    fetch("/pizzas")
+    fetch('/pizzas')
       .then((r) => r.json())
       .then(setPizzas);
   }, []);
@@ -19,22 +19,22 @@ function PizzaForm({ restaurantId, onAddPizza }) {
       restaurant_id: restaurantId,
       price: parseInt(price),
     };
-    fetch("/restaurant_pizzas", {
-      method: "POST",
+    fetch('/restaurant_pizzas', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(formData),
-    }).then((r) => {
-      if (r.ok) {
-        r.json().then((newPizza) => {
-          onAddPizza(newPizza);
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.errors) {
+          setFormErrors(data.errors);
+        } else {
+          onAddPizza(data);
           setFormErrors([]);
-        });
-      } else {
-        r.json().then((err) => setFormErrors(err.errors));
-      }
-    });
+        }
+      });
   }
 
   return (

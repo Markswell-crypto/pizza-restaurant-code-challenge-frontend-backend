@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "eb0d1ea1846a64a2676f94ca7da19b6ec5ff7ae59377de25634189f8f8275cff"
+            "sha256": "1ff9c4ef073b8eea9bc8b1c5de150fd58b01cc30c4a4a54751106266e4b3d8bb"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -59,7 +59,7 @@
                 "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330",
                 "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"
             ],
-            "markers": "python_version > '3.6' and python_version < '3.11'",
+            "markers": "python_version < '3.11' and python_version >= '3.7'",
             "version": "==5.1.1"
         },
         "exceptiongroup": {
@@ -95,6 +95,14 @@
             "index": "pypi",
             "markers": "python_version >= '3.8'",
             "version": "==3.0.1"
+        },
+        "flask-cors": {
+            "hashes": [
+                "sha256:bc3492bfd6368d27cfe79c7821df5a8a319e1a6d5eab277a3794be19bdc51783",
+                "sha256:f268522fcb2f73e2ecdde1ef45e2fd5c71cc48fe03cffb4b441c6d1b40684eb0"
+            ],
+            "index": "pypi",
+            "version": "==4.0.0"
         },
         "flask-marshmallow": {
             "hashes": [
@@ -244,7 +252,7 @@
                 "sha256:2f21bd3fc1d51550c89ee3944ae04bbc7bc79e129ea0937da6e6c68bfdbf117a",
                 "sha256:bc9716aad6f29f36c449e30821c9dd0c1c1a7b59ddcc26931685b87b4c569619"
             ],
-            "markers": "python_version > '3.6' and python_version < '3.11'",
+            "markers": "python_version < '3.11' and python_version >= '3.7'",
             "version": "==8.20.0"
         },
         "itsdangerous": {
@@ -447,7 +455,7 @@
                 "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86",
                 "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.8.2"
         },
         "pytz": {
@@ -462,7 +470,7 @@
                 "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
                 "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==1.16.0"
         },
         "sqlalchemy": {

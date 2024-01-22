@@ -14,13 +14,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JSON_SORT_KEYS"] = False
 app.json.compact = False
 
-CORS(app)
 migrate = Migrate(app, db)
 db.init_app(app)
 ma = Marshmallow(app)
 
 api = Api(app)
- 
+CORS(app)
+
 class PizzasSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Pizza
@@ -116,7 +116,8 @@ class RestaurantByIDResource(Resource):
         db.session.delete(restaurant)
         db.session.commit()
 
-        return jsonify({}), 204
+        return jsonify({"message": "Restaurant deleted successfully."}), 204
+
 
     def patch(self, id):
         restaurant = Restaurant.query.get(id)
@@ -205,11 +206,14 @@ class RestaurantPizzasResource(Resource):
         elif not (1 <= args["price"] <= 30):
             abort(422, message="Validation Error", errors={"message": "Price must be between 1 and 30"})
 
-        db.session.add(restaurant_pizza)
-        db.session.commit()
-
-        return jsonify(pizza_schema.dump(pizza)), 201
-
+        try:
+            db.session.add(restaurant_pizza)
+            db.session.commit()
+            return jsonify(pizza_schema.dump(pizza)), 201
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"errors": [str(e)]}), 500
+        
 # RESTful routes
 api.add_resource(RestaurantsResource, '/restaurants')
 api.add_resource(RestaurantByIDResource, '/restaurants/<int:id>')

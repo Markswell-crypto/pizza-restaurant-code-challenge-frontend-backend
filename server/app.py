@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from flask import Flask, request, make_response, jsonify
+from flask import Flask, request, jsonify
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
-from flask_restful import Api, Resource, reqparse, fields, abort
+from flask_restful import Api, Resource, reqparse, abort
 from flask_cors import CORS
 
 from models import db, Restaurant, Pizza, RestaurantPizza
@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JSON_SORT_KEYS"] = False
-app.json.compact = False
+app.jsonify_compact = False  
 
 migrate = Migrate(app, db)
 db.init_app(app)
@@ -21,6 +21,7 @@ ma = Marshmallow(app)
 api = Api(app)
 CORS(app)
 
+# Schemas
 class PizzasSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Pizza
@@ -76,8 +77,8 @@ class RestaurantsResource(Resource):
         restaurants = Restaurant.query.all()
 
         if not restaurants:
-            abort(404, message="This record does not exist in our database. Please try again.")
-        
+            return jsonify({"message": "No restaurants found."}), 404
+
         return jsonify(restaurants_schema.dump(restaurants))
 
     def post(self):
@@ -87,14 +88,14 @@ class RestaurantsResource(Resource):
         db.session.add(new_restaurant)
         db.session.commit()
 
-        return jsonify(restaurant_schema.dump(new_restaurant)), 201
+        return ({"restaurant": restaurant_schema.dump(new_restaurant)}), 201
 
 class RestaurantByIDResource(Resource):
     def get(self, id):
         restaurant = Restaurant.query.get(id)
 
         if not restaurant:
-            abort(404, message="Restaurant not found")
+            return jsonify({"message": "Restaurant not found"}), 404
 
         pizzas = Pizza.query.join(RestaurantPizza).filter(RestaurantPizza.restaurant_id == id).all()
 
@@ -111,19 +112,18 @@ class RestaurantByIDResource(Resource):
         restaurant = Restaurant.query.get(id)
 
         if not restaurant:
-            abort(404, message="Restaurant not found.")
+            return jsonify({"message": "Restaurant not found."}), 404
 
         db.session.delete(restaurant)
         db.session.commit()
 
-        return jsonify({"message": "Restaurant deleted successfully."}), 204
-
+        return ({"message": "Restaurant deleted successfully."}), 204
 
     def patch(self, id):
         restaurant = Restaurant.query.get(id)
 
         if not restaurant:
-            abort(404, message="Restaurant not found.")
+            return jsonify({"message": "Restaurant not found."}), 404
 
         args = restaurant_parser.parse_args()
         restaurant.name = args['name']
@@ -131,14 +131,14 @@ class RestaurantByIDResource(Resource):
 
         db.session.commit()
 
-        return jsonify(restaurant_schema.dump(restaurant))
+        return jsonify({"restaurant": restaurant_schema.dump(restaurant)})
 
 class PizzasResource(Resource):
     def get(self):
         pizzas = Pizza.query.all()
 
         if not pizzas:
-            abort(404, message="Pizza not found.")
+            return jsonify({"message": "No pizzas found."}), 404
 
         return jsonify(pizzas_schema.dump(pizzas))
 
@@ -149,22 +149,22 @@ class PizzasResource(Resource):
         db.session.add(new_pizza)
         db.session.commit()
 
-        return jsonify(pizza_schema.dump(new_pizza)), 201
+        return ({"pizza": pizza_schema.dump(new_pizza)}), 201
 
 class PizzaByIDResource(Resource):
     def get(self, id):
         pizza_exists = Pizza.query.get(id)
 
         if not pizza_exists:
-            abort(404, message="Pizza not found.")
+            return jsonify({"message": "Pizza not found."}), 404
 
-        return jsonify(pizza_schema.dump(pizza_exists))
+        return jsonify({"pizza": pizza_schema.dump(pizza_exists)})
 
     def patch(self, id):
         pizza = Pizza.query.get(id)
 
         if not pizza:
-            abort(404, message="Pizza not found.")
+            return jsonify({"message": "Pizza not found."}), 404
 
         args = pizza_parser.parse_args()
         pizza.name = args['name']
@@ -172,18 +172,18 @@ class PizzaByIDResource(Resource):
 
         db.session.commit()
 
-        return jsonify(pizza_schema.dump(pizza))
+        return jsonify({"pizza": pizza_schema.dump(pizza)})
 
     def delete(self, id):
         pizza = Pizza.query.get(id)
 
         if not pizza:
-            abort(404, message="Pizza not found.")
+            return jsonify({"message": "Pizza not found."}), 404
 
         db.session.delete(pizza)
         db.session.commit()
 
-        return jsonify({"message": "Pizza deleted successfully."}), 204
+        return ({"message": "Pizza deleted successfully."}), 204
 
 class RestaurantPizzasResource(Resource):
     def post(self):
@@ -198,22 +198,22 @@ class RestaurantPizzasResource(Resource):
         pizza = Pizza.query.get(args["pizza_id"])
 
         if not pizza and not restaurant:
-            abort(404, message="Restaurant and Pizza not found.")
+            return ({"message": "Restaurant and Pizza not found."}), 404
         elif not restaurant:
-            abort(404, message="Restaurant not found.")
+            return ({"message": "Restaurant not found."}), 404
         elif not pizza:
-            abort(404, message="Pizza not found.")
+            return ({"message": "Pizza not found."}), 404
         elif not (1 <= args["price"] <= 30):
-            abort(422, message="Validation Error", errors={"message": "Price must be between 1 and 30"})
+            return ({"message": "Validation Error", "errors": {"message": "Price must be between 1 and 30"}}), 422
 
         try:
             db.session.add(restaurant_pizza)
             db.session.commit()
-            return jsonify(pizza_schema.dump(pizza)), 201
+            return ({"pizza": pizza_schema.dump(pizza)}), 201
         except Exception as e:
             db.session.rollback()
-            return jsonify({"errors": [str(e)]}), 500
-        
+            return ({"errors": [str(e)]}), 500
+
 # RESTful routes
 api.add_resource(RestaurantsResource, '/restaurants')
 api.add_resource(RestaurantByIDResource, '/restaurants/<int:id>')

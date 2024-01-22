@@ -1,7 +1,5 @@
 # pizza-restaurant-code-challenge-frontend-backend
 
-## Phase 4 Week 1 : Flask Code Challenge
-
 [![license](https://img.shields.io/badge/license-%20MIT%20-green.svg)](./LICENSE)
 ![python version](https://img.shields.io/badge/python-3.10.12-blue.svg)
 ![Flask version](https://img.shields.io/badge/flask-2.3.3-red.svg)

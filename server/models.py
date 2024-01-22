@@ -14,7 +14,7 @@ class Restaurant(db.Model, SerializerMixin):
     restaurant_pizzas = db.relationship('RestaurantPizza', backref='restaurant')
 
     def to_dict(self):
-        return self.to_dict_exclude('restaurant_pizzas')  # exclude relationship
+        return self.to_dict_exclude('restaurant_pizzas')  
 
 class Pizza(db.Model, SerializerMixin):
     __tablename__ = 'pizzas'

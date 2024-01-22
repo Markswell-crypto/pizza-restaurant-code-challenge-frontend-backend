@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
 from flask_restful import Api, Resource, reqparse, fields, abort
+from flask_cors import CORS
 
 from models import db, Restaurant, Pizza, RestaurantPizza
 
@@ -13,24 +14,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JSON_SORT_KEYS"] = False
 app.json.compact = False
 
+CORS(app)
 migrate = Migrate(app, db)
 db.init_app(app)
 ma = Marshmallow(app)
 
 api = Api(app)
-
-class RestaurantSchema(ma.SQLAlchemySchema):
-    class Meta:
-        model = Restaurant
-        ordered = True
-
-    id = ma.auto_field()
-    name = ma.auto_field()
-    address = ma.auto_field()
-
-restaurant_schema = RestaurantSchema()
-restaurants_schema = RestaurantSchema(many=True)
-
+ 
 class PizzasSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Pizza
@@ -42,6 +32,19 @@ class PizzasSchema(ma.SQLAlchemySchema):
 
 pizza_schema = PizzasSchema()
 pizzas_schema = PizzasSchema(many=True)
+
+class RestaurantSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Restaurant
+        ordered = True
+
+    id = ma.auto_field()
+    name = ma.auto_field()
+    address = ma.auto_field()
+    pizzas = ma.Nested(PizzasSchema, many=True)
+
+restaurant_schema = RestaurantSchema()
+restaurants_schema = RestaurantSchema(many=True)
 
 class RestaurantPizzaSchema(ma.SQLAlchemySchema):
     class Meta:
@@ -75,7 +78,7 @@ class RestaurantsResource(Resource):
         if not restaurants:
             abort(404, message="This record does not exist in our database. Please try again.")
         
-        return restaurants_schema.dump(restaurants), 200
+        return jsonify(restaurants_schema.dump(restaurants))
 
     def post(self):
         args = restaurant_parser.parse_args()
@@ -84,7 +87,7 @@ class RestaurantsResource(Resource):
         db.session.add(new_restaurant)
         db.session.commit()
 
-        return restaurant_schema.dump(new_restaurant), 201
+        return jsonify(restaurant_schema.dump(new_restaurant)), 201
 
 class RestaurantByIDResource(Resource):
     def get(self, id):
@@ -102,7 +105,7 @@ class RestaurantByIDResource(Resource):
             "pizzas": [{"id": pizza.id, "name": pizza.name, "ingredients": pizza.ingredients} for pizza in pizzas]
         }
 
-        return response_body, 200
+        return jsonify(response_body)
 
     def delete(self, id):
         restaurant = Restaurant.query.get(id)
@@ -113,7 +116,7 @@ class RestaurantByIDResource(Resource):
         db.session.delete(restaurant)
         db.session.commit()
 
-        return {}, 204
+        return jsonify({}), 204
 
     def patch(self, id):
         restaurant = Restaurant.query.get(id)
@@ -127,7 +130,7 @@ class RestaurantByIDResource(Resource):
 
         db.session.commit()
 
-        return restaurant_schema.dump(restaurant), 200
+        return jsonify(restaurant_schema.dump(restaurant))
 
 class PizzasResource(Resource):
     def get(self):
@@ -136,7 +139,7 @@ class PizzasResource(Resource):
         if not pizzas:
             abort(404, message="Pizza not found.")
 
-        return pizzas_schema.dump(pizzas), 200
+        return jsonify(pizzas_schema.dump(pizzas))
 
     def post(self):
         args = pizza_parser.parse_args()
@@ -145,7 +148,7 @@ class PizzasResource(Resource):
         db.session.add(new_pizza)
         db.session.commit()
 
-        return pizza_schema.dump(new_pizza), 201
+        return jsonify(pizza_schema.dump(new_pizza)), 201
 
 class PizzaByIDResource(Resource):
     def get(self, id):
@@ -154,7 +157,7 @@ class PizzaByIDResource(Resource):
         if not pizza_exists:
             abort(404, message="Pizza not found.")
 
-        return pizza_schema.dump(pizza_exists), 200
+        return jsonify(pizza_schema.dump(pizza_exists))
 
     def patch(self, id):
         pizza = Pizza.query.get(id)
@@ -168,7 +171,7 @@ class PizzaByIDResource(Resource):
 
         db.session.commit()
 
-        return pizza_schema.dump(pizza), 200
+        return jsonify(pizza_schema.dump(pizza))
 
     def delete(self, id):
         pizza = Pizza.query.get(id)
@@ -179,7 +182,7 @@ class PizzaByIDResource(Resource):
         db.session.delete(pizza)
         db.session.commit()
 
-        return {"message": "Pizza deleted successfully."}, 204
+        return jsonify({"message": "Pizza deleted successfully."}), 204
 
 class RestaurantPizzasResource(Resource):
     def post(self):
@@ -205,7 +208,7 @@ class RestaurantPizzasResource(Resource):
         db.session.add(restaurant_pizza)
         db.session.commit()
 
-        return pizza_schema.dump(pizza), 201
+        return jsonify(pizza_schema.dump(pizza)), 201
 
 # RESTful routes
 api.add_resource(RestaurantsResource, '/restaurants')
@@ -213,3 +216,4 @@ api.add_resource(RestaurantByIDResource, '/restaurants/<int:id>')
 api.add_resource(PizzasResource, '/pizzas')
 api.add_resource(PizzaByIDResource, '/pizzas/<int:id>')
 api.add_resource(RestaurantPizzasResource, '/restaurant_pizzas')
+

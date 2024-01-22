@@ -1,18 +1,30 @@
 // Home.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function Home() {
   const [restaurants, setRestaurants] = useState([]);
 
   useEffect(() => {
-    fetch('/restaurants')
-      .then((r) => r.json())
-      .then(setRestaurants);
+    fetch('http://localhost:5555/restaurants')
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error('Failed to fetch restaurants');
+        }
+        return r.json();
+      })
+      .then((data) => {
+        setRestaurants(data);
+      })
+      .catch((error) => {
+        console.error('Error fetching restaurants:', error);
+        // Handle error as needed, e.g., set an error state
+      });
   }, []);
+  
 
   function handleDelete(id) {
-    fetch(`/restaurants/${id}`, {
+    fetch(`http://localhost:5555/restaurants/${id}`, {
       method: 'DELETE',
     }).then((r) => {
       if (r.ok) {

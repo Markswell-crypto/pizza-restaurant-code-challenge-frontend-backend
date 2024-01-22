@@ -1,19 +1,18 @@
-// Restaurant.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import PizzaForm from './PizzaForm';
-import Pizza from './Pizza'; 
+import Pizza from './Pizza';
 
 function Restaurant() {
   const [{ data: restaurant, error, status }, setRestaurant] = useState({
-    data: { pizzas: [] }, // Initialize pizzas array
+    data: { pizzas: [] },
     error: null,
     status: 'pending',
   });
   const { id } = useParams();
 
   useEffect(() => {
-    fetch(`/restaurants/${id}`)
+    fetch(`http://localhost:5555/restaurants/${id}`)
       .then((r) => {
         if (r.ok) {
           return r.json();
@@ -44,20 +43,26 @@ function Restaurant() {
   if (status === 'rejected') return <h1>Error: {error}</h1>;
 
   return (
-    <section className="container">
+    <section className="container mt-4">
       <div className="card">
-        <h1>{restaurant.name}</h1>
-        <p>{restaurant.address}</p>
+        <div className="card-body">
+          <h1 className="card-title">{restaurant.name}</h1>
+          <p className="card-text">{restaurant.address}</p>
+        </div>
       </div>
-      <div className="card">
-        <h2>Pizza Menu</h2>
-        {restaurant.pizzas.map((pizza) => (
-          <Pizza key={pizza.id} pizza={pizza} />
-        ))}
+      <div className="card mt-4">
+        <div className="card-body">
+          <h2 className="card-title">Pizza Menu</h2>
+          {restaurant.pizzas.map((pizza) => (
+            <Pizza key={pizza.id} pizza={pizza} />
+          ))}
+        </div>
       </div>
-      <div className="card">
-        <h3>Add New Pizza</h3>
-        <PizzaForm restaurantId={restaurant.id} onAddPizza={handleAddPizza} />
+      <div className="card mt-4">
+        <div className="card-body">
+          <h3 className="card-title">Add New Pizza</h3>
+          <PizzaForm restaurantId={restaurant.id} onAddPizza={handleAddPizza} />
+        </div>
       </div>
     </section>
   );

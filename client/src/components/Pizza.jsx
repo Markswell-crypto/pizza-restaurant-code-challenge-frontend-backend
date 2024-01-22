@@ -1,6 +1,4 @@
 // Pizza.jsx (Add this component)
-import React from 'react';
-
 function Pizza({ pizza }) {
   return (
     <div key={pizza.id}>
